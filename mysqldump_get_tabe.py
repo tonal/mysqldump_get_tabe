@@ -36,12 +36,7 @@ def copy_table(line, ofile, tables):
     return copy_table
   if not tables:
     return None
-  tbl = line.split('`')[1].lower()
-  if tbl not in tables:
-    return start_parse
-  tables.remove(tbl)
-  print>>ofile, line.rstrip()
-  return copy_table
+  return start_parse(line, ofile, tables)
 
 def __parse_opt():
   parser = OptionParser(usage='usage: %prog [options] url or file')
