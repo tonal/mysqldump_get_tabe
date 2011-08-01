@@ -58,12 +58,12 @@ def __parse_opt():
   parser.add_option(
     '-v', '--verbose', action='store_true', dest='verbose', default=False,
     help='print verbose status messages to stdout')
-  (options, args) = parser.parse_args()
-  options.tables = frozenset(
-    tbl.strip().lower() for tbl in options.tables.split(','))
-  options.ifile = open(options.ifile) if options.ifile != 'stdin' else sys.stdin
-  options.ofile = open(options.ofile) if options.ofile != 'stdout' else sys.stdout
-  return options, args
+  (opts, args) = parser.parse_args()
+  opts.tables = frozenset(
+    tbl.strip().lower() for tbl in opts.tables.split(','))
+  opts.ifile = open(opts.ifile) if opts.ifile != 'stdin' else sys.stdin
+  opts.ofile = open(opts.ofile, 'w') if opts.ofile != 'stdout' else sys.stdout
+  return opts, args
 
 def __init_log(opts):
   u'Настройка лога'
