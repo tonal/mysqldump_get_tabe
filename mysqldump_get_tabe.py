@@ -1,7 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 u'''
-Разбиение XML-я на куски
+Вытаскивание описания и данных указанных таблиц из дампа MySql
+
+Copyright (C) 2011  Alexandr N. Zamaraev (aka tonal)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 from copy import deepcopy
 import logging
@@ -11,9 +26,9 @@ import sys
 
 def main(opts):
   parse = start_parse
-  tables = set(opts.tables)
-  if not tables:
+  if not opts.tables:
     return
+  tables = set(opts.tables)
   ofile = opts.ofile
   for line in opts.ifile:
     parse = parse(line, ofile, tables)
@@ -39,7 +54,7 @@ def copy_table(line, ofile, tables):
   return start_parse(line, ofile, tables)
 
 def __parse_opt():
-  parser = OptionParser(usage='usage: %prog [options] url or file')
+  parser = OptionParser(usage='usage: %prog [options]')
   parser.add_option(
     "-t", "--tables", dest="tables",
     help="tables for extract (split comma) ")
@@ -58,12 +73,19 @@ def __parse_opt():
   parser.add_option(
     '-v', '--verbose', action='store_true', dest='verbose', default=False,
     help='print verbose status messages to stdout')
+  parser.add_option(
+    '', '--version', action='store_true', dest='version', default=False,
+    help='print version and license to stdout')
   (opts, args) = parser.parse_args()
-  opts.tables = frozenset(
-    tbl.strip().lower() for tbl in opts.tables.split(','))
+  if opts.tables:
+    opts.tables = frozenset(
+      tbl.strip().lower() for tbl in opts.tables.split(','))
   opts.ifile = open(opts.ifile) if opts.ifile != 'stdin' else sys.stdin
   opts.ofile = open(opts.ofile, 'w') if opts.ofile != 'stdout' else sys.stdout
   return opts, args
+
+def print_version():
+  print 'License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>'
 
 def __init_log(opts):
   u'Настройка лога'
@@ -84,5 +106,8 @@ def __init_log(opts):
 
 if __name__ == '__main__':
   opts, args = __parse_opt()
-  __init_log(opts)
-  main(opts)
+  if opts.version:
+    print_version()
+  else:
+    __init_log(opts)
+    main(opts)
