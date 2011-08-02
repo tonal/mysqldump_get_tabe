@@ -19,6 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 from copy import deepcopy
+import gzip
 import logging
 from optparse import OptionParser
 import os.path as osp
@@ -68,6 +69,9 @@ def __parse_opt():
     "-l", "--log", dest="log", default="",
     help="log file FILE [default: %default]", metavar="FILE")
   parser.add_option(
+    "-g", "--gzip", action="store_true", dest="gzip", default=False,
+    help="input gzipped")
+  parser.add_option(
     "-q", "--quiet", action="store_true", dest="quiet", default=False,
     help="don't print status messages to stdout")
   parser.add_option(
@@ -80,7 +84,10 @@ def __parse_opt():
   if opts.tables:
     opts.tables = frozenset(
       tbl.strip().lower() for tbl in opts.tables.split(','))
-  opts.ifile = open(opts.ifile) if opts.ifile != 'stdin' else sys.stdin
+  iname = opts.ifile
+  opts.ifile = open(iname) if iname != 'stdin' else sys.stdin
+  if opts.gzip:
+    opts.ifile = gzip.GzipFile(iname, fileobj=opts.ifile)
   opts.ofile = open(opts.ofile, 'w') if opts.ofile != 'stdout' else sys.stdout
   return opts, args
 
