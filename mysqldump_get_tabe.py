@@ -25,10 +25,17 @@ from optparse import OptionParser
 import os.path as osp
 import sys
 
+START_TABLE_STRUCT = '%s Table structure for table '
+
 def main(opts):
-  parse = start_parse
   if not opts.tables:
     return
+  parse = start_parse
+  if opts.start_comm == 'auto':
+    parse = start_comm_parse
+  else:
+    parse = start_parse
+    init_comm(opts.start_comm)
   tables = set(opts.tables)
   ofile = opts.ofile
   for line in opts.ifile:
@@ -36,8 +43,21 @@ def main(opts):
     if not parse:
       return
 
+def init_comm(comm):
+  global START_TABLE_STRUCT
+  START_TABLE_STRUCT = START_TABLE_STRUCT % comm
+
+def start_comm_parse(line, ofile, tables):
+  if line.startswith('#'):
+    init_comm('#')
+  elif line.startswith('--'):
+    init_comm('--')
+  else:
+    sys.exit('Do not recognized comment for table struct')
+  return start_parse(line, ofile, tables)
+
 def start_parse(line, ofile, tables):
-  if not line.startswith('-- Table structure for table '):
+  if not line.startswith(START_TABLE_STRUCT):
     return start_parse
   tbl = line.split('`')[1].lower()
   if tbl not in tables:
@@ -47,7 +67,7 @@ def start_parse(line, ofile, tables):
   return copy_table
 
 def copy_table(line, ofile, tables):
-  if not line.startswith('-- Table structure for table '):
+  if not line.startswith(START_TABLE_STRUCT):
     print>>ofile, line.rstrip()
     return copy_table
   if not tables:
@@ -68,6 +88,9 @@ def __parse_opt():
   parser.add_option(
     "-l", "--log", dest="log", default="",
     help="log file FILE [default: %default]", metavar="FILE")
+  parser.add_option(
+    "-c", "--start-comment", dest="start_comm", default='auto',
+    help="start comment for table struct (--|#|auto) [default: %default]")
   parser.add_option(
     "-g", "--gzip", action="store_true", dest="gzip", default=False,
     help="input gzipped")
