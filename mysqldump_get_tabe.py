@@ -18,7 +18,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-from copy import deepcopy
 import gzip
 import logging
 from optparse import OptionParser
@@ -129,7 +128,7 @@ def __init_log(opts):
   if not opts.log:
     return
   log = logging.FileHandler(opts.log, 'a', 'utf-8')
-  log.setLevel(level) #logging.INFO) #DEBUG) #
+  log.setLevel(level)
   formatter = logging.Formatter(fmt=format, datefmt=datefmt)
   log.setFormatter(formatter)
   logging.getLogger('').addHandler(log)
