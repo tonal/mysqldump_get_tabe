@@ -18,11 +18,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-import gzip
 import logging
 from optparse import OptionParser
 import os.path as osp
 import sys
+
+__version__ = '0.2.0'
 
 START_TABLE_STRUCT = '%s Table structure for table '
 
@@ -36,10 +37,12 @@ def main(opts):
     parse = start_parse
     init_comm(opts.start_comm)
   tables = set(opts.tables)
+  logging.debug('find tables: %s', sorted(tables))
   ofile = opts.ofile
   for line in opts.ifile:
     parse = parse(line, ofile, tables)
     if not parse:
+      logging.info("end all tables")
       return
 
 def init_comm(comm):
@@ -63,12 +66,14 @@ def start_parse(line, ofile, tables):
     return start_parse
   tables.remove(tbl)
   print>>ofile, line.rstrip()
+  logging.info("find table '%s'", tbl)
   return copy_table
 
 def copy_table(line, ofile, tables):
   if not line.startswith(START_TABLE_STRUCT):
     print>>ofile, line.rstrip()
     return copy_table
+  logging.info("end copy table")
   if not tables:
     return None
   return start_parse(line, ofile, tables)
@@ -90,9 +95,27 @@ def __parse_opt():
   parser.add_option(
     "-c", "--start-comment", dest="start_comm", default='auto',
     help="start comment for table struct (--|#|auto) [default: %default]")
-  parser.add_option(
-    "-g", "--gzip", action="store_true", dest="gzip", default=False,
-    help="input gzipped")
+  try:
+    import gzip
+    parser.add_option(
+      "-g", "--gzip", action="store_true", dest="gzip", default=False,
+      help="input gzipped")
+  except:
+    parser.set_defaults(gzip=False)
+  try:
+    import bz2
+    parser.add_option(
+      "-b", "--bzip2", action="store_true", dest="bzip", default=False,
+      help="input bzipped")
+  except:
+    parser.set_defaults(bzip=False)
+  try:
+    import tarfile
+    parser.add_option(
+      "-a", "--autotar", action="store_true", dest="tar", default=False,
+      help="input tar file with auto compression")
+  except:
+    parser.set_defaults(tar=False)
   parser.add_option(
     "-q", "--quiet", action="store_true", dest="quiet", default=False,
     help="don't print status messages to stdout")
@@ -107,13 +130,30 @@ def __parse_opt():
     opts.tables = frozenset(
       tbl.strip().lower() for tbl in opts.tables.split(','))
   iname = opts.ifile
-  opts.ifile = open(iname) if iname != 'stdin' else sys.stdin
-  if opts.gzip:
-    opts.ifile = gzip.GzipFile(iname, fileobj=opts.ifile)
+  no_stdin = iname != 'stdin'
+  if opts.bzip and no_stdin:
+    opts.ofile = bz2.BZ2File(iname)
+  else:
+    if opts.gzip:
+      ifile = (
+        gzip.GzipFile(iname) if no_stdin
+        else gzip.GzipFile(iname, fileobj=sys.stdin))
+    elif opts.tar:
+      mode = 'r%s*' % (':' if no_stdin else '|')
+      tar = (
+        tarfile.open(iname, mode=mode) if no_stdin
+        else tarfile.open(iname, mode=mode, fileobj=sys.stdin))
+      ifile = (
+        li for ti in tar if ti.isfile()
+        for li in tar.extractfile(ti))
+    else:
+      ifile = open(iname) if no_stdin else sys.stdin
+    opts.ifile = ifile
   opts.ofile = open(opts.ofile, 'w') if opts.ofile != 'stdout' else sys.stdout
   return opts, args
 
 def print_version():
+  print osp.basename(sys.argv[0]), 'version', __version__
   print 'License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>'
 
 def __init_log(opts):
