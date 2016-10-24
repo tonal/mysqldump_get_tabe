@@ -132,7 +132,7 @@ def __parse_opt():
   iname = opts.ifile
   no_stdin = iname != 'stdin'
   if opts.bzip and no_stdin:
-    opts.ofile = bz2.BZ2File(iname)
+    opts.ifile = bz2.BZ2File(iname)
   else:
     if opts.gzip:
       ifile = (
